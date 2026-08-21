@@ -1,0 +1,48 @@
+{
+  "name": "Waitlist",
+  "description": "One click coming soon page. Collect emails, persistent SQLite, admin CSV export.",
+  "services": [
+    {
+      "name": "Waitlist",
+      "source": "this GitHub repository",
+      "volume": {
+        "mountPath": "/data"
+      },
+      "networking": {
+        "publicHttp": true
+      },
+      "healthcheckPath": "/health",
+      "variables": {
+        "ADMIN_PASSWORD": {
+          "value": "${{secret()}}",
+          "description": "Password for /admin. Generated automatically on deploy."
+        },
+        "DATA_DIR": {
+          "value": "/data",
+          "description": "SQLite directory. Must match the volume mount path."
+        },
+        "SITE_NAME": {
+          "value": "Waitlist",
+          "description": "Brand name shown as the hero on the public page."
+        },
+        "HEADLINE": {
+          "value": "Something worth waiting for",
+          "description": "One short line under the brand."
+        },
+        "SUPPORT_TEXT": {
+          "value": "Leave your email. Be first when we open the doors.",
+          "description": "Supporting sentence under the headline."
+        },
+        "CTA_TEXT": {
+          "value": "Join the list",
+          "description": "Submit button label."
+        },
+        "ACCENT_COLOR": {
+          "value": "#D4A574",
+          "description": "Accent color for the CTA button (any CSS color)."
+        }
+      }
+    }
+  ],
+  "overviewFile": "TEMPLATE.md"
+}

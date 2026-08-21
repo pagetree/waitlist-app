@@ -1,0 +1,19 @@
+{
+  "name": "waitlist",
+  "version": "1.0.0",
+  "description": "One click waitlist and coming soon page for Railway",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2"
+  }
+}
