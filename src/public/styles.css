@@ -340,6 +340,149 @@ body {
   transform: scale(0.985);
 }
 
+/* Admin login */
+.login-page {
+  display: grid;
+  place-items: center;
+  padding: clamp(5rem, 10vw, 6rem) 1.35rem 2.5rem;
+}
+
+.login {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 22rem);
+  animation: rise 640ms var(--ease) both;
+}
+
+.login > * {
+  animation: rise 700ms var(--ease) both;
+}
+
+.login-brand {
+  animation-delay: 40ms;
+}
+
+.login-title {
+  animation-delay: 100ms;
+}
+
+.login-lead {
+  animation-delay: 160ms;
+}
+
+.login-form {
+  animation-delay: 220ms;
+}
+
+.login-back {
+  animation-delay: 300ms;
+}
+
+.login-brand {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.login-title {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 7vw, 3rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.login-lead {
+  margin: 0 0 1.75rem;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.login-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.login-form input {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.login-form input::placeholder {
+  color: var(--ink-faint);
+}
+
+.login-form input:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line-strong));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.login-form button {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.8rem 1.1rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: filter 160ms var(--ease), transform 160ms var(--ease);
+}
+
+.login-form button:hover {
+  filter: brightness(1.06);
+}
+
+.login-form button:active {
+  transform: scale(0.985);
+}
+
+.login-form button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 80%, white);
+  outline-offset: 3px;
+}
+
+.login-error {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 550;
+  color: var(--bad);
+  letter-spacing: -0.01em;
+}
+
+.login-back {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-size: 0.88rem;
+  font-weight: 550;
+  color: var(--ink-soft);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: color 160ms var(--ease);
+}
+
+.login-back:hover {
+  color: var(--ink);
+}
+
 /* Admin */
 .admin-shell {
   position: relative;
@@ -349,23 +492,11 @@ body {
   padding: clamp(4.75rem, 8vw, 5.75rem) clamp(1.25rem, 4vw, 2.5rem) 3rem;
 }
 
-.admin-card,
 .admin-layout {
   position: relative;
   z-index: 1;
   width: min(100%, 52rem);
   animation: rise 640ms var(--ease) both;
-}
-
-.admin-card {
-  width: min(100%, 24rem);
-  padding: 1.85rem 1.7rem;
-  border: 1px solid var(--line);
-  border-radius: 1.1rem;
-  background: var(--surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 24px 60px rgba(11, 13, 16, 0.08);
 }
 
 .admin-title {
@@ -377,7 +508,6 @@ body {
   letter-spacing: -0.035em;
 }
 
-.admin-card .eyebrow,
 .admin-head .eyebrow {
   margin: 0 0 0.45rem;
   font-size: 0.72rem;
@@ -385,11 +515,6 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-faint);
-}
-
-.admin-card .support {
-  margin-bottom: 1.35rem;
-  font-size: 0.95rem;
 }
 
 .admin-head {
@@ -597,10 +722,12 @@ tbody tr:hover td {
 
 @media (prefers-reduced-motion: reduce) {
   .hero > *,
-  .admin-card,
+  .login > *,
+  .login,
   .admin-layout,
   .theme-toggle,
   .join button,
+  .login-form button,
   .stack-form button,
   .settings-form button[type="submit"],
   .btn-ghost,

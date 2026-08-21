@@ -87,24 +87,25 @@ export function publicPage(config, flash) {
 export function adminLoginPage(config, error) {
   const brand = escapeHtml(config.siteName);
   const err = error
-    ? `<p class="flash flash-error" role="alert">${escapeHtml(error)}</p>`
+    ? `<p class="login-error" role="alert">${escapeHtml(error)}</p>`
     : "";
 
   return `${head(config, "Admin")}
-<body class="page admin-shell">
+<body class="page login-page">
   <header class="topbar">
     ${themeToggle()}
   </header>
-  <main class="admin-card">
-    <p class="eyebrow">Admin</p>
-    <h1 class="admin-title">${brand}</h1>
-    <p class="support">Use the admin password from your Railway variables.</p>
-    <form class="stack-form" method="post" action="/admin/login">
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" required autocomplete="current-password" />
-      <button type="submit">Sign in</button>
+  <main class="login">
+    <p class="login-brand">${brand}</p>
+    <h1 class="login-title">Sign in</h1>
+    <p class="login-lead">Admin access for this waitlist.</p>
+    <form class="login-form" method="post" action="/admin/login">
+      <label class="sr-only" for="password">Password</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Password" autofocus />
+      ${err}
+      <button type="submit">Continue</button>
     </form>
-    ${err}
+    <a class="login-back" href="/">Back to site</a>
   </main>
 </body>
 </html>`;
