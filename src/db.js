@@ -16,13 +16,17 @@ export function openDb(dataDir) {
     db.pragma("journal_mode = WAL");
     db.pragma("busy_timeout = 5000");
     db.exec(`
-    CREATE TABLE IF NOT EXISTS signups (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE INDEX IF NOT EXISTS idx_signups_created ON signups(created_at DESC);
-  `);
+      CREATE TABLE IF NOT EXISTS signups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_signups_created ON signups(created_at DESC);
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
     return db;
   } catch (err) {
     throw new Error(
@@ -55,4 +59,25 @@ export function signupExists(db, email) {
     .prepare("SELECT 1 AS ok FROM signups WHERE email = ? COLLATE NOCASE")
     .get(email.trim().toLowerCase());
   return Boolean(row);
+}
+
+export function getSettings(db) {
+  const rows = db.prepare("SELECT key, value FROM settings").all();
+  const out = {};
+  for (const row of rows) {
+    out[row.key] = row.value;
+  }
+  return out;
+}
+
+export function setSettings(db, values) {
+  const upsert = db.prepare(
+    "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  );
+  const tx = db.transaction((entries) => {
+    for (const [key, value] of entries) {
+      upsert.run(key, value);
+    }
+  });
+  tx(Object.entries(values));
 }

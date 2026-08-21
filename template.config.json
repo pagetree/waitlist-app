@@ -38,7 +38,7 @@
           "description": "Submit button label."
         },
         "ACCENT_COLOR": {
-          "value": "#D4A574",
+          "value": "#1F6F5B",
           "description": "Accent color for the CTA button (any CSS color)."
         }
       }

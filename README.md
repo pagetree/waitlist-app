@@ -31,7 +31,7 @@ Open `http://localhost:3000`. Do not commit `.env`.
 | `HEADLINE` | no | `Something worth waiting for` | One line under the brand |
 | `SUPPORT_TEXT` | no | see `.env.example` | Short support sentence |
 | `CTA_TEXT` | no | `Join the list` | Button label |
-| `ACCENT_COLOR` | no | `#D4A574` | CSS color for the CTA |
+| `ACCENT_COLOR` | no | `#1F6F5B` | CSS color for the CTA |
 
 ## Marketplace overview
 

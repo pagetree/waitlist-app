@@ -6,11 +6,18 @@ import cookieParser from "cookie-parser";
 import {
   addSignup,
   countSignups,
+  getSettings,
   listSignups,
   openDb,
+  setSettings,
   signupExists,
 } from "./db.js";
-import { adminLoginPage, adminPage, publicPage } from "./views.js";
+import {
+  adminLoginPage,
+  adminPage,
+  adminSettingsPage,
+  publicPage,
+} from "./views.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -35,17 +42,18 @@ const SESSION_SECRET =
     .update(`waitlist:${resolvedAdminPassword}`)
     .digest("hex");
 
-const config = {
+const ENV_DEFAULTS = {
   siteName: process.env.SITE_NAME || "Waitlist",
   headline: process.env.HEADLINE || "Something worth waiting for",
   support:
     process.env.SUPPORT_TEXT ||
     "Leave your email. Be first when we open the doors.",
   cta: process.env.CTA_TEXT || "Join the list",
-  accent: process.env.ACCENT_COLOR || "#D4A574",
+  accent: process.env.ACCENT_COLOR || "#1F6F5B",
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ACCENT_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$|^[a-zA-Z]+$/;
 const COOKIE_NAME = "wl_admin";
 const JOIN_WINDOW_MS = 60_000;
 const JOIN_MAX_PER_WINDOW = 8;
@@ -60,6 +68,17 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "32kb" }));
 app.use(cookieParser(SESSION_SECRET));
 app.use(express.static(path.join(__dirname, "public")));
+
+function resolveConfig() {
+  const stored = getSettings(db);
+  return {
+    siteName: stored.site_name || ENV_DEFAULTS.siteName,
+    headline: stored.headline || ENV_DEFAULTS.headline,
+    support: stored.support_text || ENV_DEFAULTS.support,
+    cta: stored.cta_text || ENV_DEFAULTS.cta,
+    accent: stored.accent_color || ENV_DEFAULTS.accent,
+  };
+}
 
 function signToken() {
   return crypto
@@ -106,11 +125,16 @@ function requireAdmin(req, res, next) {
   return res.redirect("/admin");
 }
 
+function clip(value, max) {
+  return String(value || "").trim().slice(0, max);
+}
+
 app.get("/health", (_req, res) => {
   res.status(200).type("text/plain").send("ok");
 });
 
 app.get("/", (req, res) => {
+  const config = resolveConfig();
   const flash = req.query.joined
     ? { type: "ok", message: "You are on the list. We will be in touch." }
     : req.query.exists
@@ -150,6 +174,7 @@ app.post("/join", (req, res) => {
 });
 
 app.get("/admin", (req, res) => {
+  const config = resolveConfig();
   if (isAuthed(req)) {
     const signups = listSignups(db);
     const total = countSignups(db);
@@ -158,7 +183,37 @@ app.get("/admin", (req, res) => {
   return res.type("html").send(adminLoginPage(config, null));
 });
 
+app.get("/admin/settings", requireAdmin, (req, res) => {
+  const config = resolveConfig();
+  const saved = req.query.saved === "1";
+  const error = req.query.error ? "Check your fields and try again." : null;
+  res.type("html").send(adminSettingsPage(config, { saved, error }));
+});
+
+app.post("/admin/settings", requireAdmin, (req, res) => {
+  const siteName = clip(req.body?.site_name, 80);
+  const headline = clip(req.body?.headline, 160);
+  const support = clip(req.body?.support_text, 280);
+  const cta = clip(req.body?.cta_text, 48);
+  const accent = clip(req.body?.accent_color, 32);
+
+  if (!siteName || !headline || !support || !cta || !ACCENT_RE.test(accent)) {
+    return res.redirect("/admin/settings?error=1");
+  }
+
+  setSettings(db, {
+    site_name: siteName,
+    headline,
+    support_text: support,
+    cta_text: cta,
+    accent_color: accent,
+  });
+
+  return res.redirect("/admin/settings?saved=1");
+});
+
 app.post("/admin/login", (req, res) => {
+  const config = resolveConfig();
   const password = String(req.body?.password || "");
   const expected = Buffer.from(resolvedAdminPassword);
   const got = Buffer.from(password);
@@ -176,7 +231,9 @@ app.post("/admin/login", (req, res) => {
     httpOnly: true,
     sameSite: "lax",
     signed: true,
-    secure: process.env.NODE_ENV === "production" || Boolean(process.env.RAILWAY_ENVIRONMENT),
+    secure:
+      process.env.NODE_ENV === "production" ||
+      Boolean(process.env.RAILWAY_ENVIRONMENT),
     maxAge: 1000 * 60 * 60 * 24 * 7,
   });
   return res.redirect("/admin");

@@ -96,8 +96,8 @@ One sentence of support copy.
 `CTA_TEXT` = `Join the list`  
 Submit button label.
 
-`ACCENT_COLOR` = `#D4A574`  
-Button accent. Any CSS color works.
+`ACCENT_COLOR` = `#1F6F5B`  
+Button accent. Any CSS color works. After deploy you can also edit brand copy and accent in `/admin/settings`.
 
 ### Implementation Details
 

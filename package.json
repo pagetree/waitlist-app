@@ -1,6 +1,6 @@
 {
   "name": "waitlist",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "One click waitlist and coming soon page for Railway",
   "main": "src/server.js",
   "type": "module",
