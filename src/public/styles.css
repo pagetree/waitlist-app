@@ -152,28 +152,123 @@ body {
   max-width: 40rem;
 }
 
-.hero > * {
+.hero > *,
+.split-copy > * {
   animation: rise 700ms var(--ease) both;
 }
 
-.hero .brand {
+.hero .brand,
+.split-copy .brand {
   animation-delay: 40ms;
 }
 
-.hero .headline {
+.hero .headline,
+.split-copy .headline {
   animation-delay: 120ms;
 }
 
-.hero .support {
+.hero .support,
+.split-copy .support {
   animation-delay: 200ms;
 }
 
-.hero .join {
+.hero .join,
+.split-copy .join {
   animation-delay: 280ms;
 }
 
-.hero .flash {
+.hero .flash,
+.split-copy .flash {
   animation-delay: 340ms;
+}
+
+/* Centered + optional full bleed background */
+.hero-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--bg-deep);
+  background-image: var(--hero-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      105deg,
+      color-mix(in srgb, var(--bg) 88%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 62%, transparent) 42%,
+      color-mix(in srgb, var(--bg) 28%, transparent) 100%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 35%, transparent),
+      color-mix(in srgb, var(--bg) 55%, transparent)
+    );
+}
+
+.layout-centered.has-bg::before {
+  opacity: 0.18;
+}
+
+.layout-centered.has-bg .brand,
+.layout-centered.has-bg .headline {
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--bg) 40%, transparent);
+}
+
+/* Split layout */
+.split {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: center;
+  padding: clamp(4.5rem, 7vw, 5.5rem) clamp(1.35rem, 4vw, 3.5rem);
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.split-copy {
+  max-width: 28rem;
+  justify-self: end;
+  width: 100%;
+}
+
+.split-visual {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 28rem;
+  animation: rise 800ms var(--ease) both;
+  animation-delay: 160ms;
+}
+
+.split-card {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 1.35rem;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(80% 60% at 30% 20%, var(--glow), transparent 55%),
+    linear-gradient(160deg, var(--bg-elevated), var(--bg-deep));
+  box-shadow: 0 28px 70px rgba(11, 13, 16, 0.12);
+  overflow: hidden;
+}
+
+.split-card.has-image {
+  background-color: var(--bg-deep);
+  background-image: var(--panel-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .brand {
@@ -185,6 +280,10 @@ body {
   letter-spacing: -0.045em;
   color: var(--ink);
   max-width: 12ch;
+}
+
+.layout-split .brand {
+  font-size: clamp(2.8rem, 7vw, 4.4rem);
 }
 
 .headline {
@@ -614,6 +713,150 @@ body {
   color: var(--ink-soft);
 }
 
+.layout-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.layout-field legend {
+  padding: 0;
+  font-size: 0.84rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.layout-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+}
+
+.layout-choice {
+  display: block;
+  cursor: pointer;
+}
+
+.layout-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.layout-choice-card {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 100%;
+  padding: 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.95rem;
+  background: var(--bg-elevated);
+  transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.layout-choice input:checked + .layout-choice-card {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line-strong));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.layout-choice input:focus-visible + .layout-choice-card {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.layout-choice-preview {
+  display: grid;
+  height: 4.6rem;
+  padding: 0.55rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--bg-deep) 70%, var(--bg-elevated));
+  border: 1px solid var(--line);
+}
+
+.layout-preview-centered {
+  align-content: center;
+  justify-items: start;
+  gap: 0.28rem;
+}
+
+.layout-preview-centered span {
+  display: block;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.layout-preview-centered span:nth-child(1) {
+  width: 42%;
+  height: 0.55rem;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.layout-preview-centered span:nth-child(2) {
+  width: 68%;
+}
+
+.layout-preview-centered span:nth-child(3) {
+  width: 55%;
+}
+
+.layout-preview-split {
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.layout-preview-split span:first-child {
+  border-radius: 0.35rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ink) 12%, transparent),
+      color-mix(in srgb, var(--ink) 6%, transparent)
+    );
+}
+
+.layout-preview-split span:last-child {
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.layout-choice-title {
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.layout-choice-copy {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.check-row {
+  display: flex !important;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem !important;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.check-row input {
+  width: 1.05rem;
+  height: 1.05rem;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.customize-panel[hidden],
+[data-bg-url][hidden] {
+  display: none !important;
+}
+
 .settings-form textarea {
   resize: vertical;
   min-height: 5.25rem;
@@ -714,14 +957,44 @@ tbody tr:hover td {
     border-radius: 0.6rem;
   }
 
+  .layout-choices {
+    grid-template-columns: 1fr;
+  }
+
   .topbar {
     top: 0.85rem;
     right: 0.85rem;
   }
 }
 
+@media (max-width: 860px) {
+  .split {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+    padding-top: clamp(5rem, 12vw, 6rem);
+    padding-bottom: 2.5rem;
+  }
+
+  .split-copy {
+    justify-self: stretch;
+    max-width: none;
+  }
+
+  .split-visual {
+    max-width: none;
+    order: -1;
+  }
+
+  .split-card {
+    aspect-ratio: 16 / 10;
+    max-height: 16rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero > *,
+  .split-copy > *,
+  .split-visual,
   .login > *,
   .login,
   .admin-layout,

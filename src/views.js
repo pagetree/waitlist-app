@@ -7,6 +7,13 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function escapeCssUrl(value) {
+  return String(value || "")
+    .replace(/\\/g, "")
+    .replace(/["'\n\r\f]/g, "")
+    .trim();
+}
+
 function head(config, title) {
   const brand = escapeHtml(config.siteName);
   const accent = escapeHtml(config.accent);
@@ -44,6 +51,7 @@ function adminNav(active) {
   const items = [
     { href: "/admin", id: "signups", label: "Signups" },
     { href: "/admin/settings", id: "settings", label: "Settings" },
+    { href: "/admin/customize", id: "customize", label: "Customize" },
   ];
   return `<nav class="admin-nav" aria-label="Admin">
     ${items
@@ -55,7 +63,7 @@ function adminNav(active) {
   </nav>`;
 }
 
-export function publicPage(config, flash) {
+function signupBlock(config, flash) {
   const brand = escapeHtml(config.siteName);
   const headline = escapeHtml(config.headline);
   const support = escapeHtml(config.support);
@@ -64,13 +72,7 @@ export function publicPage(config, flash) {
     ? `<p class="flash ${flash.type === "error" ? "flash-error" : "flash-ok"}" role="status">${escapeHtml(flash.message)}</p>`
     : "";
 
-  return `${head(config)}
-<body class="page public">
-  <header class="topbar">
-    ${themeToggle()}
-  </header>
-  <main class="hero">
-    <h1 class="brand">${brand}</h1>
+  return `<h1 class="brand">${brand}</h1>
     <p class="headline">${headline}</p>
     <p class="support">${support}</p>
     <form class="join" method="post" action="/join" autocomplete="on">
@@ -78,7 +80,59 @@ export function publicPage(config, flash) {
       <input id="email" name="email" type="email" required maxlength="254" placeholder="you@company.com" inputmode="email" autocomplete="email" />
       <button type="submit">${cta}</button>
     </form>
-    ${flashHtml}
+    ${flashHtml}`;
+}
+
+export function publicPage(config, flash) {
+  const layout = config.layout === "split" ? "split" : "centered";
+  const useBg =
+    layout === "centered" && config.bgEnabled && Boolean(config.bgImage);
+  const bgUrl = escapeCssUrl(config.bgImage);
+  const panelUrl = escapeCssUrl(config.panelImage);
+  const bodyClass = [
+    "page",
+    "public",
+    `layout-${layout}`,
+    useBg ? "has-bg" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (layout === "split") {
+    const panelStyle = panelUrl
+      ? ` style="--panel-image: url(&quot;${escapeHtml(panelUrl)}&quot;)"`
+      : "";
+    const panelClass = panelUrl ? "split-card has-image" : "split-card";
+
+    return `${head(config)}
+<body class="${bodyClass}">
+  <header class="topbar">
+    ${themeToggle()}
+  </header>
+  <main class="split">
+    <section class="split-copy">
+      ${signupBlock(config, flash)}
+    </section>
+    <aside class="split-visual" aria-hidden="true">
+      <div class="${panelClass}"${panelStyle}></div>
+    </aside>
+  </main>
+</body>
+</html>`;
+  }
+
+  const bgLayer = useBg
+    ? `<div class="hero-bg" style="--hero-image: url(&quot;${escapeHtml(bgUrl)}&quot;)" aria-hidden="true"></div>`
+    : "";
+
+  return `${head(config)}
+<body class="${bodyClass}">
+  ${bgLayer}
+  <header class="topbar">
+    ${themeToggle()}
+  </header>
+  <main class="hero">
+    ${signupBlock(config, flash)}
   </main>
 </body>
 </html>`;
@@ -99,9 +153,9 @@ export function adminLoginPage(config, error) {
     <p class="login-brand">${brand}</p>
     <h1 class="login-title">Sign in</h1>
     <p class="login-lead">Admin access for this waitlist.</p>
-    <form class="login-form" method="post" action="/admin/login">
+    <form class="login-form" method="post" action="/admin/login" autocomplete="on">
       <label class="sr-only" for="password">Password</label>
-      <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Password" autofocus />
+      <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Password" />
       ${err}
       <button type="submit">Continue</button>
     </form>
@@ -220,6 +274,111 @@ export function adminSettingsPage(config, status = {}) {
         if (/^#[0-9a-fA-F]{6}$/.test(text.value)) picker.value = text.value;
       });
     }
+  </script>
+</body>
+</html>`;
+}
+
+export function adminCustomizePage(config, status = {}) {
+  const flash = status.saved
+    ? `<p class="flash flash-ok" role="status">Customize saved. Public page is updated.</p>`
+    : status.error
+      ? `<p class="flash flash-error" role="alert">${escapeHtml(status.error)}</p>`
+      : "";
+  const layout = config.layout === "split" ? "split" : "centered";
+  const bgChecked = config.bgEnabled ? " checked" : "";
+
+  return `${head(config, "Customize")}
+<body class="page admin-shell">
+  <header class="topbar">
+    ${themeToggle()}
+  </header>
+  <main class="admin-layout">
+    <header class="admin-head">
+      <div>
+        <p class="eyebrow">Admin</p>
+        <h1 class="admin-title">Customize</h1>
+      </div>
+      <div class="admin-actions">
+        <a class="btn-ghost" href="/" target="_blank" rel="noopener">View site</a>
+        <form method="post" action="/admin/logout"><button type="submit" class="btn-ghost">Log out</button></form>
+      </div>
+    </header>
+    ${adminNav("customize")}
+    ${flash}
+    <form class="settings-form customize-form" method="post" action="/admin/customize" data-customize>
+      <fieldset class="field layout-field">
+        <legend>Layout</legend>
+        <p class="hint">Pick how the public waitlist is composed.</p>
+        <div class="layout-choices" role="radiogroup" aria-label="Layout">
+          <label class="layout-choice">
+            <input type="radio" name="layout" value="centered"${layout === "centered" ? " checked" : ""} />
+            <span class="layout-choice-card">
+              <span class="layout-choice-preview layout-preview-centered" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </span>
+              <span class="layout-choice-title">Centered</span>
+              <span class="layout-choice-copy">Brand and form in one focused column.</span>
+            </span>
+          </label>
+          <label class="layout-choice">
+            <input type="radio" name="layout" value="split"${layout === "split" ? " checked" : ""} />
+            <span class="layout-choice-card">
+              <span class="layout-choice-preview layout-preview-split" aria-hidden="true">
+                <span></span><span></span>
+              </span>
+              <span class="layout-choice-title">Two column</span>
+              <span class="layout-choice-copy">Form on one side, image card on the other.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="customize-panel" data-panel="centered">
+        <div class="field">
+          <label class="check-row" for="bg_enabled">
+            <input id="bg_enabled" name="bg_enabled" type="checkbox" value="1"${bgChecked} />
+            <span>Use a background image</span>
+          </label>
+          <p class="hint">Full bleed photo behind the centered content.</p>
+        </div>
+        <div class="field" data-bg-url>
+          <label for="bg_image">Background image URL</label>
+          <p class="hint">Paste a direct https image link.</p>
+          <input id="bg_image" name="bg_image" type="url" maxlength="500" placeholder="https://…" value="${escapeHtml(config.bgImage || "")}" />
+        </div>
+      </div>
+
+      <div class="customize-panel" data-panel="split">
+        <div class="field">
+          <label for="panel_image">Image card URL</label>
+          <p class="hint">Shown in the rounded panel beside the form.</p>
+          <input id="panel_image" name="panel_image" type="url" maxlength="500" placeholder="https://…" value="${escapeHtml(config.panelImage || "")}" />
+        </div>
+      </div>
+
+      <button type="submit">Save</button>
+    </form>
+  </main>
+  <script>
+    (function () {
+      const form = document.querySelector("[data-customize]");
+      if (!form) return;
+      const panels = form.querySelectorAll("[data-panel]");
+      const bgUrl = form.querySelector("[data-bg-url]");
+      const bgToggle = form.querySelector("#bg_enabled");
+
+      function sync() {
+        const layout = form.querySelector('input[name="layout"]:checked')?.value || "centered";
+        panels.forEach((panel) => {
+          panel.hidden = panel.getAttribute("data-panel") !== layout;
+        });
+        if (bgUrl) bgUrl.hidden = !(layout === "centered" && bgToggle?.checked);
+      }
+
+      form.addEventListener("change", sync);
+      sync();
+    })();
   </script>
 </body>
 </html>`;

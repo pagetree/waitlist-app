@@ -13,6 +13,7 @@ import {
   signupExists,
 } from "./db.js";
 import {
+  adminCustomizePage,
   adminLoginPage,
   adminPage,
   adminSettingsPage,
@@ -54,10 +55,22 @@ const ENV_DEFAULTS = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ACCENT_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$|^[a-zA-Z]+$/;
+const LAYOUTS = new Set(["centered", "split"]);
 const COOKIE_NAME = "wl_admin";
 const JOIN_WINDOW_MS = 60_000;
 const JOIN_MAX_PER_WINDOW = 8;
 const joinHits = new Map();
+
+function isSafeImageUrl(value) {
+  const url = String(value || "").trim();
+  if (!url) return true;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 const db = openDb(DATA_DIR);
 const app = express();
@@ -71,12 +84,17 @@ app.use(express.static(path.join(__dirname, "public")));
 
 function resolveConfig() {
   const stored = getSettings(db);
+  const layout = LAYOUTS.has(stored.layout) ? stored.layout : "centered";
   return {
     siteName: stored.site_name || ENV_DEFAULTS.siteName,
     headline: stored.headline || ENV_DEFAULTS.headline,
     support: stored.support_text || ENV_DEFAULTS.support,
     cta: stored.cta_text || ENV_DEFAULTS.cta,
     accent: stored.accent_color || ENV_DEFAULTS.accent,
+    layout,
+    bgEnabled: stored.bg_enabled === "1",
+    bgImage: stored.bg_image || "",
+    panelImage: stored.panel_image || "",
   };
 }
 
@@ -180,7 +198,10 @@ app.get("/admin", (req, res) => {
     const total = countSignups(db);
     return res.type("html").send(adminPage(config, signups, total));
   }
-  return res.type("html").send(adminLoginPage(config, null));
+  const error =
+    req.query.error === "1" ? "Wrong password. Check ADMIN_PASSWORD." : null;
+  res.set("Cache-Control", "no-store");
+  return res.type("html").send(adminLoginPage(config, error));
 });
 
 app.get("/admin/settings", requireAdmin, (req, res) => {
@@ -212,8 +233,34 @@ app.post("/admin/settings", requireAdmin, (req, res) => {
   return res.redirect("/admin/settings?saved=1");
 });
 
-app.post("/admin/login", (req, res) => {
+app.get("/admin/customize", requireAdmin, (req, res) => {
   const config = resolveConfig();
+  const saved = req.query.saved === "1";
+  const error = req.query.error ? "Check your layout options and try again." : null;
+  res.type("html").send(adminCustomizePage(config, { saved, error }));
+});
+
+app.post("/admin/customize", requireAdmin, (req, res) => {
+  const layout = clip(req.body?.layout, 32);
+  const bgEnabled = req.body?.bg_enabled === "1" || req.body?.bg_enabled === "on";
+  const bgImage = clip(req.body?.bg_image, 500);
+  const panelImage = clip(req.body?.panel_image, 500);
+
+  if (!LAYOUTS.has(layout) || !isSafeImageUrl(bgImage) || !isSafeImageUrl(panelImage)) {
+    return res.redirect("/admin/customize?error=1");
+  }
+
+  setSettings(db, {
+    layout,
+    bg_enabled: bgEnabled ? "1" : "0",
+    bg_image: bgImage,
+    panel_image: panelImage,
+  });
+
+  return res.redirect("/admin/customize?saved=1");
+});
+
+app.post("/admin/login", (req, res) => {
   const password = String(req.body?.password || "");
   const expected = Buffer.from(resolvedAdminPassword);
   const got = Buffer.from(password);
@@ -222,18 +269,18 @@ app.post("/admin/login", (req, res) => {
     ok = crypto.timingSafeEqual(expected, got);
   }
   if (!ok) {
-    return res
-      .status(401)
-      .type("html")
-      .send(adminLoginPage(config, "Wrong password. Check ADMIN_PASSWORD."));
+    return res.redirect("/admin?error=1");
   }
+  const secure =
+    req.secure ||
+    String(req.headers["x-forwarded-proto"] || "").includes("https") ||
+    process.env.NODE_ENV === "production" ||
+    Boolean(process.env.RAILWAY_ENVIRONMENT);
   res.cookie(COOKIE_NAME, signToken(), {
     httpOnly: true,
     sameSite: "lax",
     signed: true,
-    secure:
-      process.env.NODE_ENV === "production" ||
-      Boolean(process.env.RAILWAY_ENVIRONMENT),
+    secure,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   });
   return res.redirect("/admin");
