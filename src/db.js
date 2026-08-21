@@ -3,12 +3,19 @@ import fs from "node:fs";
 import path from "node:path";
 
 export function openDb(dataDir) {
-  fs.mkdirSync(dataDir, { recursive: true });
+  try {
+    fs.mkdirSync(dataDir, { recursive: true });
+  } catch (err) {
+    throw new Error(
+      `Cannot create data directory "${dataDir}". Check volume mount and permissions. ${err.message}`
+    );
+  }
   const dbPath = path.join(dataDir, "waitlist.db");
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("busy_timeout = 5000");
-  db.exec(`
+  try {
+    const db = new Database(dbPath);
+    db.pragma("journal_mode = WAL");
+    db.pragma("busy_timeout = 5000");
+    db.exec(`
     CREATE TABLE IF NOT EXISTS signups (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -16,7 +23,12 @@ export function openDb(dataDir) {
     );
     CREATE INDEX IF NOT EXISTS idx_signups_created ON signups(created_at DESC);
   `);
-  return db;
+    return db;
+  } catch (err) {
+    throw new Error(
+      `Cannot open SQLite at "${dbPath}". Mount a writable volume at DATA_DIR. ${err.message}`
+    );
+  }
 }
 
 export function addSignup(db, email) {
