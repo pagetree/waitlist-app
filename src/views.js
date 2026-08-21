@@ -309,27 +309,15 @@ export function adminCustomizePage(config, status = {}) {
     <form class="settings-form customize-form" method="post" action="/admin/customize" data-customize>
       <fieldset class="field layout-field">
         <legend>Layout</legend>
-        <p class="hint">Pick how the public waitlist is composed.</p>
-        <div class="layout-choices" role="radiogroup" aria-label="Layout">
-          <label class="layout-choice">
+        <p class="hint">How the public waitlist is composed.</p>
+        <div class="layout-switch" role="radiogroup" aria-label="Layout">
+          <label class="layout-option">
             <input type="radio" name="layout" value="centered"${layout === "centered" ? " checked" : ""} />
-            <span class="layout-choice-card">
-              <span class="layout-choice-preview layout-preview-centered" aria-hidden="true">
-                <span></span><span></span><span></span>
-              </span>
-              <span class="layout-choice-title">Centered</span>
-              <span class="layout-choice-copy">Brand and form in one focused column.</span>
-            </span>
+            <span>Centered</span>
           </label>
-          <label class="layout-choice">
+          <label class="layout-option">
             <input type="radio" name="layout" value="split"${layout === "split" ? " checked" : ""} />
-            <span class="layout-choice-card">
-              <span class="layout-choice-preview layout-preview-split" aria-hidden="true">
-                <span></span><span></span>
-              </span>
-              <span class="layout-choice-title">Two column</span>
-              <span class="layout-choice-copy">Form on one side, image card on the other.</span>
-            </span>
+            <span>Two column</span>
           </label>
         </div>
       </fieldset>
@@ -351,8 +339,8 @@ export function adminCustomizePage(config, status = {}) {
 
       <div class="customize-panel" data-panel="split">
         <div class="field">
-          <label for="panel_image">Image card URL</label>
-          <p class="hint">Shown in the rounded panel beside the form.</p>
+          <label for="panel_image">Side image URL</label>
+          <p class="hint">Shown beside the form in the two column layout.</p>
           <input id="panel_image" name="panel_image" type="url" maxlength="500" placeholder="https://…" value="${escapeHtml(config.panelImage || "")}" />
         </div>
       </div>
