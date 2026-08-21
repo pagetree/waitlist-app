@@ -47,11 +47,37 @@ function themeToggle() {
   </button>`;
 }
 
+function formatJoinedAt(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const date = new Date(isoJoinedAt(raw));
+  if (Number.isNaN(date.getTime())) return escapeHtml(raw);
+  const now = new Date();
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  if (sameDay) {
+    return escapeHtml(
+      date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+    );
+  }
+  const opts = { month: "short", day: "numeric" };
+  if (date.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+  return escapeHtml(date.toLocaleDateString("en-US", opts));
+}
+
+function isoJoinedAt(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return /T/.test(raw) ? raw : `${raw.replace(" ", "T")}Z`;
+}
+
 function adminNav(active) {
   const items = [
     { href: "/admin", id: "signups", label: "Signups" },
     { href: "/admin/settings", id: "settings", label: "Settings" },
-    { href: "/admin/customize", id: "customize", label: "Customize" },
+    { href: "/admin/customize", id: "customize", label: "Layout" },
   ];
   return `<nav class="admin-nav" aria-label="Admin">
     ${items
@@ -61,6 +87,45 @@ function adminNav(active) {
       )
       .join("")}
   </nav>`;
+}
+
+function adminBar(config, active) {
+  const brand = escapeHtml(config.siteName);
+  return `<header class="admin-bar">
+    <a class="admin-mark" href="/admin">${brand}</a>
+    ${adminNav(active)}
+    <div class="admin-tools">
+      ${themeToggle()}
+      <a class="admin-text" href="/" target="_blank" rel="noopener">Site</a>
+      <form method="post" action="/admin/logout">
+        <button type="submit" class="admin-text">Log out</button>
+      </form>
+    </div>
+  </header>`;
+}
+
+function adminFlash(status, savedMessage) {
+  if (status.saved) {
+    return `<p class="admin-flash is-ok" role="status">${escapeHtml(savedMessage)}</p>`;
+  }
+  if (status.error) {
+    return `<p class="admin-flash is-bad" role="alert">${escapeHtml(status.error)}</p>`;
+  }
+  return "";
+}
+
+function adminShell(config, title, active, inner, script = "") {
+  const scriptHtml = script
+    ? `\n  <script>\n${script}\n  </script>`
+    : "";
+  return `${head(config, title)}
+<body class="page admin-shell">
+  ${adminBar(config, active)}
+  <main class="admin-stage">
+    ${inner}
+  </main>${scriptHtml}
+</body>
+</html>`;
 }
 
 function signupBlock(config, flash) {
@@ -146,16 +211,15 @@ export function adminLoginPage(config, error) {
 
   return `${head(config, "Admin")}
 <body class="page login-page">
-  <header class="topbar">
+  <header class="login-bar">
     ${themeToggle()}
   </header>
   <main class="login">
     <p class="login-brand">${brand}</p>
-    <h1 class="login-title">Sign in</h1>
-    <p class="login-lead">Admin access for this waitlist.</p>
+    <h1 class="login-title">Admin</h1>
     <form class="login-form" method="post" action="/admin/login" autocomplete="on">
-      <label class="sr-only" for="password">Password</label>
-      <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Password" />
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password" />
       ${err}
       <button type="submit">Continue</button>
     </form>
@@ -166,190 +230,133 @@ export function adminLoginPage(config, error) {
 }
 
 export function adminPage(config, signups, total) {
-  const rows =
+  const list =
     signups.length === 0
-      ? `<tr><td colspan="2" class="empty">No signups yet. Share your public URL.</td></tr>`
-      : signups
-          .map(
-            (s) => `<tr>
-              <td>${escapeHtml(s.email)}</td>
-              <td>${escapeHtml(s.created_at)}</td>
-            </tr>`
-          )
-          .join("");
+      ? `<p class="signup-empty">No one has joined.</p>`
+      : `<ul class="signup-list">
+          ${signups
+            .map(
+              (s) => `<li>
+                <span class="signup-email">${escapeHtml(s.email)}</span>
+                <time class="signup-when" datetime="${escapeHtml(isoJoinedAt(s.created_at))}">${formatJoinedAt(s.created_at)}</time>
+              </li>`
+            )
+            .join("")}
+        </ul>`;
 
-  return `${head(config, "Signups")}
-<body class="page admin-shell">
-  <header class="topbar">
-    ${themeToggle()}
-  </header>
-  <main class="admin-layout">
-    <header class="admin-head">
+  return adminShell(
+    config,
+    "Signups",
+    "signups",
+    `<div class="admin-hero">
       <div>
-        <p class="eyebrow">Admin</p>
-        <h1 class="admin-title">${total} signup${total === 1 ? "" : "s"}</h1>
+        <h1 class="admin-stat">${total}</h1>
+        <p class="admin-stat-kicker">${total === 1 ? "person waiting" : "people waiting"}</p>
       </div>
-      <div class="admin-actions">
-        <a class="btn-ghost" href="/admin/export.csv">Export CSV</a>
-        <form method="post" action="/admin/logout"><button type="submit" class="btn-ghost">Log out</button></form>
-      </div>
-    </header>
-    ${adminNav("signups")}
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Email</th><th>Joined</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <a class="admin-export" href="/admin/export.csv">Export</a>
     </div>
-  </main>
-</body>
-</html>`;
+    ${list}`
+  );
 }
 
 export function adminSettingsPage(config, status = {}) {
-  const flash = status.saved
-    ? `<p class="flash flash-ok" role="status">Settings saved. Public page is updated.</p>`
-    : status.error
-      ? `<p class="flash flash-error" role="alert">${escapeHtml(status.error)}</p>`
-      : "";
-
-  return `${head(config, "Settings")}
-<body class="page admin-shell">
-  <header class="topbar">
-    ${themeToggle()}
-  </header>
-  <main class="admin-layout">
-    <header class="admin-head">
-      <div>
-        <p class="eyebrow">Admin</p>
-        <h1 class="admin-title">Settings</h1>
-      </div>
-      <div class="admin-actions">
-        <a class="btn-ghost" href="/" target="_blank" rel="noopener">View site</a>
-        <form method="post" action="/admin/logout"><button type="submit" class="btn-ghost">Log out</button></form>
-      </div>
-    </header>
-    ${adminNav("settings")}
-    ${flash}
+  const flash = adminFlash(status, "Saved.");
+  const inner = `${flash}
+    <h1 class="admin-page-title">Settings</h1>
     <form class="settings-form" method="post" action="/admin/settings">
       <div class="field">
-        <label for="site_name">Brand name</label>
-        <p class="hint">Hero title on the public page.</p>
+        <label for="site_name">Brand</label>
         <input id="site_name" name="site_name" type="text" required maxlength="80" value="${escapeHtml(config.siteName)}" />
       </div>
       <div class="field">
         <label for="headline">Headline</label>
-        <p class="hint">One short line under the brand.</p>
         <input id="headline" name="headline" type="text" required maxlength="160" value="${escapeHtml(config.headline)}" />
       </div>
       <div class="field">
-        <label for="support_text">Support text</label>
-        <p class="hint">Supporting sentence under the headline.</p>
+        <label for="support_text">Support</label>
         <textarea id="support_text" name="support_text" required maxlength="280" rows="3">${escapeHtml(config.support)}</textarea>
       </div>
       <div class="field">
-        <label for="cta_text">Button label</label>
-        <p class="hint">Submit button on the signup form.</p>
+        <label for="cta_text">Button</label>
         <input id="cta_text" name="cta_text" type="text" required maxlength="48" value="${escapeHtml(config.cta)}" />
       </div>
       <div class="field">
-        <label for="accent_color">Accent color</label>
-        <p class="hint">CSS color for the primary button (hex preferred).</p>
+        <label for="accent_color">Accent</label>
         <div class="color-row">
           <input id="accent_color" name="accent_color" type="text" required maxlength="32" value="${escapeHtml(config.accent)}" />
           <input class="color-swatch" type="color" value="${escapeHtml(/^#[0-9a-fA-F]{6}$/.test(config.accent) ? config.accent : "#1F6F5B")}" data-accent-picker aria-label="Pick accent color" />
         </div>
       </div>
-      <button type="submit">Save settings</button>
-    </form>
-  </main>
-  <script>
-    const text = document.getElementById("accent_color");
+      <button type="submit">Save</button>
+    </form>`;
+  const script = `    const text = document.getElementById("accent_color");
     const picker = document.querySelector("[data-accent-picker]");
     if (text && picker) {
       picker.addEventListener("input", () => { text.value = picker.value; });
       text.addEventListener("input", () => {
         if (/^#[0-9a-fA-F]{6}$/.test(text.value)) picker.value = text.value;
       });
-    }
-  </script>
-</body>
-</html>`;
+    }`;
+  return adminShell(config, "Settings", "settings", inner, script);
 }
 
 export function adminCustomizePage(config, status = {}) {
-  const flash = status.saved
-    ? `<p class="flash flash-ok" role="status">Customize saved. Public page is updated.</p>`
-    : status.error
-      ? `<p class="flash flash-error" role="alert">${escapeHtml(status.error)}</p>`
-      : "";
+  const flash = adminFlash(status, "Saved.");
   const layout = config.layout === "split" ? "split" : "centered";
   const bgChecked = config.bgEnabled ? " checked" : "";
-
-  return `${head(config, "Customize")}
-<body class="page admin-shell">
-  <header class="topbar">
-    ${themeToggle()}
-  </header>
-  <main class="admin-layout">
-    <header class="admin-head">
-      <div>
-        <p class="eyebrow">Admin</p>
-        <h1 class="admin-title">Customize</h1>
-      </div>
-      <div class="admin-actions">
-        <a class="btn-ghost" href="/" target="_blank" rel="noopener">View site</a>
-        <form method="post" action="/admin/logout"><button type="submit" class="btn-ghost">Log out</button></form>
-      </div>
-    </header>
-    ${adminNav("customize")}
-    ${flash}
+  const inner = `${flash}
+    <h1 class="admin-page-title">Layout</h1>
     <form class="settings-form customize-form" method="post" action="/admin/customize" data-customize>
-      <fieldset class="field layout-field">
-        <legend>Layout</legend>
-        <p class="hint">How the public waitlist is composed.</p>
-        <div class="layout-switch" role="radiogroup" aria-label="Layout">
-          <label class="layout-option">
+      <fieldset class="look-field">
+        <legend class="sr-only">Layout</legend>
+        <div class="look-grid" role="radiogroup" aria-label="Layout">
+          <label class="look-card">
             <input type="radio" name="layout" value="centered"${layout === "centered" ? " checked" : ""} />
-            <span>Centered</span>
+            <span class="look-art look-art-center" aria-hidden="true">
+              <span class="look-art-stack">
+                <span class="look-art-line"></span>
+                <span class="look-art-line"></span>
+                <span class="look-art-line look-art-cta"></span>
+              </span>
+            </span>
+            <span class="look-name">Centered</span>
           </label>
-          <label class="layout-option">
+          <label class="look-card">
             <input type="radio" name="layout" value="split"${layout === "split" ? " checked" : ""} />
-            <span>Two column</span>
+            <span class="look-art look-art-split" aria-hidden="true">
+              <span class="look-art-stack">
+                <span class="look-art-line"></span>
+                <span class="look-art-line"></span>
+                <span class="look-art-line look-art-cta"></span>
+              </span>
+              <span class="look-art-pane"></span>
+            </span>
+            <span class="look-name">Split</span>
           </label>
         </div>
       </fieldset>
 
       <div class="customize-panel" data-panel="centered">
-        <div class="field">
-          <label class="check-row" for="bg_enabled">
-            <input id="bg_enabled" name="bg_enabled" type="checkbox" value="1"${bgChecked} />
-            <span>Use a background image</span>
-          </label>
-          <p class="hint">Full bleed photo behind the centered content.</p>
-        </div>
+        <label class="switch-row" for="bg_enabled">
+          <span>Background</span>
+          <input id="bg_enabled" name="bg_enabled" type="checkbox" value="1" class="switch"${bgChecked} />
+        </label>
         <div class="field" data-bg-url>
-          <label for="bg_image">Background image URL</label>
-          <p class="hint">Paste a direct https image link.</p>
-          <input id="bg_image" name="bg_image" type="url" maxlength="500" placeholder="https://…" value="${escapeHtml(config.bgImage || "")}" />
+          <label for="bg_image">Image</label>
+          <input id="bg_image" name="bg_image" type="url" maxlength="500" placeholder="Paste an image link" value="${escapeHtml(config.bgImage || "")}" />
         </div>
       </div>
 
       <div class="customize-panel" data-panel="split">
         <div class="field">
-          <label for="panel_image">Side image URL</label>
-          <p class="hint">Shown beside the form in the two column layout.</p>
-          <input id="panel_image" name="panel_image" type="url" maxlength="500" placeholder="https://…" value="${escapeHtml(config.panelImage || "")}" />
+          <label for="panel_image">Side image</label>
+          <input id="panel_image" name="panel_image" type="url" maxlength="500" placeholder="Paste an image link" value="${escapeHtml(config.panelImage || "")}" />
         </div>
       </div>
 
       <button type="submit">Save</button>
-    </form>
-  </main>
-  <script>
-    (function () {
+    </form>`;
+  const script = `    (function () {
       const form = document.querySelector("[data-customize]");
       if (!form) return;
       const panels = form.querySelectorAll("[data-panel]");
@@ -366,8 +373,6 @@ export function adminCustomizePage(config, status = {}) {
 
       form.addEventListener("change", sync);
       sync();
-    })();
-  </script>
-</body>
-</html>`;
+    })();`;
+  return adminShell(config, "Layout", "customize", inner, script);
 }
