@@ -21,7 +21,7 @@ function head(config, title) {
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
   <style>:root { --accent: ${accent}; }</style>
   <script src="/theme.js"></script>
@@ -30,8 +30,13 @@ function head(config, title) {
 
 function themeToggle() {
   return `<button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
-    <span class="theme-toggle-sun" aria-hidden="true">Light</span>
-    <span class="theme-toggle-moon" aria-hidden="true">Dark</span>
+    <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M21 14.3A8.5 8.5 0 0 1 9.7 3 7 7 0 1 0 21 14.3Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+    </svg>
+    <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.75"/>
+      <path d="M12 2.5v1.8M12 19.7v1.8M4.5 12H2.7M21.3 12h-1.8M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M18.4 5.6l-1.3 1.3M6.9 17.1l-1.3 1.3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+    </svg>
   </button>`;
 }
 
@@ -65,13 +70,12 @@ export function publicPage(config, flash) {
     ${themeToggle()}
   </header>
   <main class="hero">
-    <p class="eyebrow">Coming soon</p>
     <h1 class="brand">${brand}</h1>
     <p class="headline">${headline}</p>
     <p class="support">${support}</p>
     <form class="join" method="post" action="/join" autocomplete="on">
       <label class="sr-only" for="email">Email</label>
-      <input id="email" name="email" type="email" required maxlength="254" placeholder="you@company.com" inputmode="email" />
+      <input id="email" name="email" type="email" required maxlength="254" placeholder="you@company.com" inputmode="email" autocomplete="email" />
       <button type="submit">${cta}</button>
     </form>
     ${flashHtml}
