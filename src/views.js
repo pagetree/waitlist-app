@@ -48,13 +48,6 @@ export function publicPage(config, flash) {
     </form>
     ${flashHtml}
   </main>
-  <script>
-    document.querySelectorAll(".reveal").forEach((el, i) => {
-      requestAnimationFrame(() => {
-        setTimeout(() => el.classList.add("in"), 80 + i * 90);
-      });
-    });
-  </script>
 </body>
 </html>`;
 }
