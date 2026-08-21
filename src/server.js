@@ -15,10 +15,25 @@ import { adminLoginPage, adminPage, publicPage } from "./views.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
+const IS_PROD =
+  process.env.NODE_ENV === "production" ||
+  Boolean(process.env.RAILWAY_ENVIRONMENT);
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "").trim();
+
+if (IS_PROD && (!ADMIN_PASSWORD || ADMIN_PASSWORD === "changeme")) {
+  console.error(
+    "Refusing to start: set ADMIN_PASSWORD to a strong secret (not changeme)."
+  );
+  process.exit(1);
+}
+
+const resolvedAdminPassword = ADMIN_PASSWORD || "changeme";
 const SESSION_SECRET =
   process.env.SESSION_SECRET ||
-  crypto.createHash("sha256").update(`waitlist:${ADMIN_PASSWORD}`).digest("hex");
+  crypto
+    .createHash("sha256")
+    .update(`waitlist:${resolvedAdminPassword}`)
+    .digest("hex");
 
 const config = {
   siteName: process.env.SITE_NAME || "Waitlist",
@@ -32,11 +47,15 @@ const config = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COOKIE_NAME = "wl_admin";
+const JOIN_WINDOW_MS = 60_000;
+const JOIN_MAX_PER_WINDOW = 8;
+const joinHits = new Map();
 
 const db = openDb(DATA_DIR);
 const app = express();
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "32kb" }));
 app.use(cookieParser(SESSION_SECRET));
@@ -45,8 +64,30 @@ app.use(express.static(path.join(__dirname, "public")));
 function signToken() {
   return crypto
     .createHmac("sha256", SESSION_SECRET)
-    .update(`admin:${ADMIN_PASSWORD}`)
+    .update(`admin:${resolvedAdminPassword}`)
     .digest("hex");
+}
+
+function clientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.length > 0) {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.socket.remoteAddress || "unknown";
+}
+
+function allowJoin(ip) {
+  const now = Date.now();
+  const recent = (joinHits.get(ip) || []).filter(
+    (stamp) => now - stamp < JOIN_WINDOW_MS
+  );
+  if (recent.length >= JOIN_MAX_PER_WINDOW) {
+    joinHits.set(ip, recent);
+    return false;
+  }
+  recent.push(now);
+  joinHits.set(ip, recent);
+  return true;
 }
 
 function isAuthed(req) {
@@ -74,13 +115,21 @@ app.get("/", (req, res) => {
     ? { type: "ok", message: "You are on the list. We will be in touch." }
     : req.query.exists
       ? { type: "ok", message: "You are already on the list." }
-      : req.query.error
-        ? { type: "error", message: "Enter a valid email to join." }
-        : null;
+      : req.query.rate
+        ? {
+            type: "error",
+            message: "Too many attempts. Wait a minute and try again.",
+          }
+        : req.query.error
+          ? { type: "error", message: "Enter a valid email to join." }
+          : null;
   res.type("html").send(publicPage(config, flash));
 });
 
 app.post("/join", (req, res) => {
+  if (!allowJoin(clientIp(req))) {
+    return res.redirect("/?rate=1");
+  }
   const email = String(req.body?.email || "").trim();
   if (!EMAIL_RE.test(email) || email.length > 254) {
     return res.redirect("/?error=1");
@@ -111,7 +160,7 @@ app.get("/admin", (req, res) => {
 
 app.post("/admin/login", (req, res) => {
   const password = String(req.body?.password || "");
-  const expected = Buffer.from(ADMIN_PASSWORD);
+  const expected = Buffer.from(resolvedAdminPassword);
   const got = Buffer.from(password);
   let ok = false;
   if (expected.length === got.length) {

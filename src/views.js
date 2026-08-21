@@ -38,8 +38,8 @@ export function publicPage(config, flash) {
     <div class="grain"></div>
   </div>
   <main class="hero">
-    <p class="brand reveal">${brand}</p>
-    <h1 class="headline reveal delay-1">${headline}</h1>
+    <h1 class="brand reveal">${brand}</h1>
+    <p class="headline reveal delay-1">${headline}</p>
     <p class="support reveal delay-2">${support}</p>
     <form class="join reveal delay-3" method="post" action="/join" autocomplete="on">
       <label class="sr-only" for="email">Email</label>

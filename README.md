@@ -24,7 +24,7 @@ Open `http://localhost:3000`. Do not commit `.env`.
 
 | Name | Required | Default | Notes |
 | --- | --- | --- | --- |
-| `ADMIN_PASSWORD` | yes | `changeme` | Use `${{secret()}}` on Railway templates |
+| `ADMIN_PASSWORD` | yes on Railway | `changeme` locally only | Use `${{secret()}}` on Railway. Production refuses `changeme`. |
 | `DATA_DIR` | yes on Railway | `./data` locally | Must be `/data` with the volume |
 | `PORT` | no | `3000` | Railway injects this |
 | `SITE_NAME` | no | `Waitlist` | Brand shown as the hero |
